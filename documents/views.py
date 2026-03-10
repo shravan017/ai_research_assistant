@@ -36,7 +36,7 @@ class DocumentUploadView(APIView):
             document.save()             #save the document instance with the extracted content to the database
             #split the extracted text into chunks for better processing
             chunks = split_into_chunks(text)
-            for chunk, index in enumerate(chunks):
+            for index, chunk in enumerate(chunks):
                 DocumentChunk.objects.create(
                     document = document,
                     content = chunk,
