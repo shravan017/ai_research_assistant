@@ -32,6 +32,9 @@ urlpatterns = [
     #include the documents app's URLs under the /api/documents/ path (modular URL configuration)
     path('api/documents/', include('documents.urls')), 
     
+    #include ai api endpoint
+    path('api/ai/', include('ai.urls')),
+    
 ]
 
 if settings.DEBUG:
