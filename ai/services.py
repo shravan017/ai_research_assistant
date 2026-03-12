@@ -45,6 +45,7 @@ def split_into_chunks(text, chunk_size = 500, overlap = 50):
     return chunks
 
 # Function to create embeddings for a given text using the SentenceTransformer model (e.g., "all-MiniLM-L6-v2") for semantic search and analysis
+from rest_framework import response
 from sentence_transformers import SentenceTransformer
 
 model = SentenceTransformer("all-MiniLM-L6-v2")
@@ -77,3 +78,48 @@ def semantic_search(question, workspace_id, top_k = 5):
     results.sort(key = lambda x : x[0], reverse=True)
     top_chunks = [chunk for score, chunk in results[:top_k]]
     return top_chunks
+
+# LLM service function to generate a response from a language model (e.g., OpenAI's GPT-3) based on a given prompt.
+import requests
+from django.conf import settings
+
+def generate_answer(question, chunks):
+    
+    context = "\n\n".join([c.content for c in chunks])
+    
+    prompt = f"""
+    You are research assistant.
+    
+    Use the context below to answer the question.
+    Context:
+    {context}
+    
+    Question:
+    {question}
+    
+    Answer clearly:
+    """
+    API_URL = "https://api-inference.huggingface.co/models/google/flan-t5-large"
+    
+    headers = {
+        "Authorization": f"Bearer {settings.HF_API_KEY}"
+    }
+    
+    payload = {
+        "inputs": prompt,
+        "parameters": {
+            "max_new_tokens":200
+        }
+    }
+    
+    response = requests.post(API_URL, headers=headers, json=payload)
+    print("Status Code:", response.status_code)
+    result = response.json()
+    
+    print("Raw Response:", response.text)
+    print("API Result:", result)
+    
+    if isinstance(result, list):
+        return result[0]["generated_text"]
+    
+    return "LLM could not generate response"

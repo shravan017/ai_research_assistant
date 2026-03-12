@@ -1,7 +1,7 @@
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from .services import semantic_search
+from .services import semantic_search, generate_answer
 
 
 class AskResearchAgent(APIView):
@@ -13,14 +13,17 @@ class AskResearchAgent(APIView):
         workspace_id = request.data.get("workspace_id")
         
         chunks = semantic_search(question, workspace_id)
-        result = []
+        
+        answer = generate_answer(question, chunks)
+        sources = []
         
         for chunk in chunks:
-            result.append({
+            sources.append({
                 "document":chunk.document.title,
-                "content": chunk.content,
+                "content": chunk.content[:200],
             })
         return Response({
             "question":question,
-            "result":result,
+            "answer":answer,
+            "sources":sources
         })
