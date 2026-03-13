@@ -12,7 +12,7 @@ class AskResearchAgent(APIView):
         question = request.data.get("question")
         workspace_id = request.data.get("workspace_id")
         
-        chunks = semantic_search(question, workspace_id)
+        chunks = semantic_search(question, workspace_id)[:3]
         
         answer = generate_answer(question, chunks)
         sources = []
@@ -20,7 +20,7 @@ class AskResearchAgent(APIView):
         for chunk in chunks:
             sources.append({
                 "document":chunk.document.title,
-                "content": chunk.content[:200],
+                "chunk_index": chunk.chunk_index,
             })
         return Response({
             "question":question,

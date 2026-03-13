@@ -18,6 +18,7 @@ def extract_text_from_docx(file_path):
         
     return text
 
+
 # General text extraction function that determines the file type and calls the appropriate extraction function
 def extract_text(file_path, file_type):
     if file_type == 'pdf':
@@ -85,41 +86,114 @@ from django.conf import settings
 
 def generate_answer(question, chunks):
     
-    context = "\n\n".join([c.content for c in chunks])
+    context = "\n\n".join([c.content[:500] for c in chunks])
     
-    prompt = f"""
-    You are research assistant.
-    
-    Use the context below to answer the question.
-    Context:
-    {context}
-    
-    Question:
-    {question}
-    
-    Answer clearly:
-    """
-    API_URL = "https://api-inference.huggingface.co/models/google/flan-t5-large"
+    API_URL = "https://router.huggingface.co/v1/chat/completions"
     
     headers = {
-        "Authorization": f"Bearer {settings.HF_API_KEY}"
+        "Authorization": f"Bearer {settings.HF_API_KEY}",
+        "Content-Type": "application/json"
     }
     
     payload = {
-        "inputs": prompt,
-        "parameters": {
-            "max_new_tokens":200
-        }
+        "model": "mistralai/Mistral-7B-Instruct-v0.2:featherless-ai",
+        "messages": [
+            {
+                "role":"system",
+                "content": """You are a helpful AI research assistant. 
+                Answer only using the provided context.
+                Do not make up information.
+
+                If the answer is not in the context, say "I don't know based on the provided documents"."""
+            },
+            {
+                "role":"user",
+                "content": f"""
+                Context:
+                {context}
+                
+                Question:
+                {question}"""
+            }
+        ],
+        "max_tokens": 200,
+        "temperature": 0.3
     }
     
-    response = requests.post(API_URL, headers=headers, json=payload)
-    print("Status Code:", response.status_code)
-    result = response.json()
+    try:
+        response = requests.post(API_URL, headers=headers, json=payload)
+
+        print("Status Code:", response.status_code)
+        print("Raw Response:", response.text)
+
+        
+        if response.status_code != 200:
+            return f"LLM API error: {response.status_code}"
+
+        
+        result = response.json()
+
+        
+        if "choices" in result:
+            return result["choices"][0]["message"]["content"]
+
+        return "LLM returned unexpected response."
+
+    except Exception as e:
+        print("LLM ERROR:", str(e))
+        return "LLM request failed."
+
+
+# Streaming LLM answer function to generate a response from a language model in a streaming manner, allowing for real-time updates as the model generates the answer.
+def stream_llm_answer(question, chunks):
     
-    print("Raw Response:", response.text)
-    print("API Result:", result)
-    
-    if isinstance(result, list):
-        return result[0]["generated_text"]
-    
-    return "LLM could not generate response"
+    context = "\n\n".join([c.content[:500] for c in chunks])
+    API_URL = "https://router.huggingface.co/v1/chat/completions"
+    headers = {
+        "Authorization": f"Bearer {settings.HF_API_KEY}",
+        "Content-Type": "application/json"
+    }
+    payload = {
+        "model": "mistralai/Mistral-7B-Instruct-v0.2:featherless-ai",
+        "messages": [
+            {
+                "role":"system",
+                "content": """You are a helpful AI research assistant.
+                Answer only using the provided context.
+                Do not make up information.
+
+                If the answer is not in the context, say "I don't know based on the provided documents".
+                """
+            },
+            {
+                "role":"user",
+                "content":f"""
+                Context:
+                {context}
+                
+                Question:
+                {question}
+                """
+            }
+        ],
+        "max_tokens": 200,
+        "temperature": 0.3
+    }
+    try:
+        response = requests.post(API_URL, headers=headers, json=payload)
+        if response.status_code != 200:
+            return f"LLM API error: {response.status_code}"
+        
+        result = response.json()
+        if "choices" in result:
+            text = result["choices"][0]["message"]["content"]
+            words = text.split()
+            for word in words:
+                yield word + " "
+        else:
+            yield "LLM Error"
+        
+    except Exception as e:
+        print("LLM ERROR:", str(e))
+        return "LLM request failed."        
+        
