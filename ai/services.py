@@ -1,4 +1,6 @@
 
+import json
+
 from pypdf import PdfReader
 import docx
 
@@ -177,23 +179,31 @@ def stream_llm_answer(question, chunks):
             }
         ],
         "max_tokens": 200,
-        "temperature": 0.3
+        "temperature": 0.3,
+        "stream": True
     }
+    
     try:
-        response = requests.post(API_URL, headers=headers, json=payload)
-        if response.status_code != 200:
-            return f"LLM API error: {response.status_code}"
-        
-        result = response.json()
-        if "choices" in result:
-            text = result["choices"][0]["message"]["content"]
-            words = text.split()
-            for word in words:
-                yield word + " "
-        else:
-            yield "LLM Error"
-        
+        response = requests.post(API_URL, headers=headers, json=payload, stream=True)
+        for line in response.iter_lines():
+            if line:
+                decoded = line.decode('utf-8')
+                if decoded.startswith("data: "):
+                    data = decoded.replace("data: ", "")
+                    
+                    if data == "[DONE]":
+                        break
+                    
+                    chunk = json.loads(data)
+                    
+                    if "choices" in chunk:
+                        delta = chunk["choices"][0]["delta"]
+                        
+                        if "content" in delta:
+                            yield delta["content"]
+                            
+                            
     except Exception as e:
-        print("LLM ERROR:", str(e))
-        return "LLM request failed."        
+        yield "Streaming LLM request failed."
+                
         
