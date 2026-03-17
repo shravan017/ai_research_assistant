@@ -55,7 +55,7 @@ class ResearchAgentView(APIView):
         question = request.data.get("question")
         workspace_id = request.data.get("workspace_id")
         
-        answer = research_agent(question, workspace_id)
+        answer = research_agent(question, workspace_id, request.user)
         
         return Response({
             "question": question,

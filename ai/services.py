@@ -86,9 +86,7 @@ def semantic_search(question, workspace_id, top_k = 5):
 import requests
 from django.conf import settings
 
-def generate_answer(question, chunks):
-    
-    context = "\n\n".join([c.content[:500] for c in chunks])
+def generate_answer(prompt):
     
     API_URL = "https://router.huggingface.co/v1/chat/completions"
     
@@ -110,12 +108,7 @@ def generate_answer(question, chunks):
             },
             {
                 "role":"user",
-                "content": f"""
-                Context:
-                {context}
-                
-                Question:
-                {question}"""
+                "content": prompt
             }
         ],
         "max_tokens": 200,

@@ -1,8 +1,22 @@
 from .agent_tool import search_document
 from .services import generate_answer
+from .models import Conversation, Message
 
-def research_agent(question, workspace_id):
-    # search for the relevent documents
+def research_agent(question, workspace_id, user):
+    
+    # Get or Create a conversation for the workspace
+    conversation, _ = Conversation.objects.get_or_create(
+        workspace_id = workspace_id,
+        user=user
+    )
+    
+    # Save User Message
+    Message.objects.create(
+        conversation = conversation,
+        role = "user",
+        content=question
+    )
+    # search for the relevent documents(RAG)
     documents = search_document(question, workspace_id)
     
     context_blocks = []
@@ -12,15 +26,36 @@ def research_agent(question, workspace_id):
         context_blocks.append(block)
     context = "\n\n".join(context_blocks)
     
-    chunks = []
-    class Fakechunk:
-        def __init__(self, content):
-            self.content = content
-            
-    for block in context_blocks:
-        chunks.append(Fakechunk(block))
+    # Get History of the conversation
+    history = Message.objects.filter(
+        conversation = conversation
+    ).order_by("-created_at")[:5] # get last 5 messages
+    
+    history_text = ""
+    
+    for msg in reversed(history):
+        history_text += f"{msg.role}:{msg.content}\n"
+        
+    # Build final prompt for the LLM
+    final_prompt = f"""
+    Conversation History:
+    {history_text}
+    
+    Document Context:
+    {context}
+    
+    Question:
+    {question}
+    """ 
     # generate an answer using the LLM
-    answer = generate_answer(question, chunks)
+    answer = generate_answer(final_prompt)
+    
+    # save AI response
+    Message.objects.create(
+        conversation = conversation,
+        role = "assistant",
+        content = answer
+    )
     
     return answer
     
