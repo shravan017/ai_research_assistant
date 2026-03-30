@@ -3,7 +3,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from .services import semantic_search, generate_answer, stream_llm_answer
 from django.http import StreamingHttpResponse
-from .agent import research_agent
+from ai.agents.manager import manager_agent
 
 class AskResearchAgent(APIView):
     
@@ -46,7 +46,7 @@ class StreamResearchAgent(APIView):
         )
         
         return response
-    
+   
 class ResearchAgentView(APIView):
     
     permission_classes = [IsAuthenticated]
@@ -55,7 +55,7 @@ class ResearchAgentView(APIView):
         question = request.data.get("question")
         workspace_id = request.data.get("workspace_id")
         
-        answer = research_agent(question, workspace_id, request.user)
+        answer = manager_agent(question, workspace_id, request.user)
         
         return Response({
             "question": question,

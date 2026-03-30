@@ -1,6 +1,8 @@
-from .agent_tool import search_document
-from .services import generate_answer
-from .models import Conversation, Message
+from ai.models import Conversation, Message
+from ai.agent_tool import search_document
+from ai.services import generate_answer
+
+
 
 def research_agent(question, workspace_id, user):
     
@@ -58,4 +60,3 @@ def research_agent(question, workspace_id, user):
     )
     
     return answer
-    
