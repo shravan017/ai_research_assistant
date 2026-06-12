@@ -20,7 +20,7 @@ const Register = () => {
         e.preventDefault();
 
         try{
-            await api.post("/auth/register/", formData)
+            await api.post("/auth/register/", formData);
             alert(" Registration is Successfull!!")
             navigate("/login");
         } catch (err) {
@@ -31,7 +31,7 @@ const Register = () => {
   return (
     <>
         <div className='min-h-screen flex items-center justify-center bg-black'>
-            <form onSubmit={handleSubmit} className='bg-zinc-800 p-8 w-92 rounded-lg'>
+            <form onSubmit={handleSubmit} className='bg-zinc-800 p-8 w-96 rounded-lg'>
                 <h1 className='text-2xl text-white font-bold mb-6 text-center'>Register</h1>
 
                 <input 
