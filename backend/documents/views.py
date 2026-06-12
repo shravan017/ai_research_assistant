@@ -1,5 +1,6 @@
 from django.shortcuts import render
 from rest_framework.views import APIView
+from rest_framework.generics import ListAPIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
@@ -24,7 +25,7 @@ class DocumentUploadView(APIView):
                 id = request.data.get('workspace_id'),
                 owner = request.user
             )
-            #set the uploaded_by field to the authenticated user when saving the document (ownership-based access control
+            #set the uploaded_by field to the authenticated user when saving the document (ownership-based access control)
             document = serializer.save(uploaded_by = request.user, workspace = workspace)
             
             #get the file path of the uploaded document to extract its content
@@ -48,5 +49,16 @@ class DocumentUploadView(APIView):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+class DocumentListView(ListAPIView):
+    permission_classes = [IsAuthenticated,]
+    serializer_class = DocumentSerializer
+
+    def get_queryset(self):
+        workspace_id = self.request.query_params.get("workspace_id")
+        return Document.objects.filter(
+            workspace_id = workspace_id,
+            uploaded_by = self.request.user
+        ).order_by("-created_at")
     
     
