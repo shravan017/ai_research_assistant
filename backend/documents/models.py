@@ -15,7 +15,7 @@ class Document(models.Model):
         User,
         on_delete=models.CASCADE
     )
-    title = models.CharField(max_length=255)
+    title = models.CharField(max_length=255) 
     file = models.FileField(upload_to='documents/')
     file_type = models.CharField(max_length=50)
     content = models.TextField(blank=True)

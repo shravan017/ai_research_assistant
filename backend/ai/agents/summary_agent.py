@@ -22,5 +22,8 @@ def summary_agent(question, workspace_id, user):
     {question}
     """
     answer = generate_answer(prompt)
-    return answer
+    return {
+        "answer": answer,
+        "sources": []
+    }
     

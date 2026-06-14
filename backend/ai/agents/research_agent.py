@@ -51,6 +51,12 @@ def research_agent(question, workspace_id, user):
     """ 
     # generate an answer using the LLM
     answer = generate_answer(final_prompt)
+    sources = []
+
+    for doc in documents.keys():
+        sources.append({
+            "document": doc
+        }) 
     
     # save AI response
     Message.objects.create(
@@ -59,4 +65,4 @@ def research_agent(question, workspace_id, user):
         content = answer
     )
     
-    return answer
+    return {"answer":answer, "sources":sources}

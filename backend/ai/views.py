@@ -4,6 +4,8 @@ from rest_framework.response import Response
 from .services import semantic_search, generate_answer, stream_llm_answer
 from django.http import StreamingHttpResponse
 from ai.agents.manager import manager_agent
+from .models import Conversation
+from .serializers import MessageSerializer
 
 class AskResearchAgent(APIView):
     
@@ -39,7 +41,7 @@ class StreamResearchAgent(APIView):
         question = request.data.get("question")
         workspace_id = request.data.get("workspace_id")
         
-        chunks = semantic_search(question, workspace_id)[:3]
+        chunks = semantic_search(question, workspace_id)[:4]
         response = StreamingHttpResponse(
             stream_llm_answer(question, chunks),
             content_type = "text/plain"
@@ -55,11 +57,28 @@ class ResearchAgentView(APIView):
         question = request.data.get("question")
         workspace_id = request.data.get("workspace_id")
         
-        answer = manager_agent(question, workspace_id, request.user)
+        result = manager_agent(question, workspace_id, request.user)
+        
         
         return Response({
             "question": question,
-            "answer": answer
+            "answer": result["answer"],
+            "sources": result["sources"]
         })
+    
+class ConversationHistoryView(APIView):
+    permission_classes = [IsAuthenticated,]
+
+    def get(self, request, workspace_id):
+        conversation = Conversation.objects.filter(
+            workspace_id = workspace_id,
+            user = request.user
+        ).first()
+        if not conversation: return Response([])
+
+        messages = conversation.messages.all().order_by("created_at")
+
+        serializer = MessageSerializer(messages, many=True)
+        return Response(serializer.data)
         
         

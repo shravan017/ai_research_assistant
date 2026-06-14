@@ -1,10 +1,11 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import api from '../api/axios';
 
 
 function Workspace() {
 
+  const messagesEndRef = useRef(null)
   const {id} = useParams();
   const [documents, setDocuments] = useState([])
   const [question, setQuestion] = useState("")
@@ -15,6 +16,19 @@ function Workspace() {
   useEffect(() => {
     fetchDocuments()
   },[id])
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({
+      behavior: "smooth"
+    });
+  }, [messages]);
+
+  useEffect(() => {
+    loadHistory();
+  }, [id]);
+
+
+
 
   const fetchDocuments = async () => {
     try {
@@ -54,12 +68,37 @@ function Workspace() {
     }
   }
 
+  const loadHistory = async () => {
+
+    try {
+
+      const response = await api.get(
+        `/ai/history/${id}/`
+      );
+
+      const history = response.data.map(msg => ({
+        role: msg.role,
+        content: msg.content,
+        timestamp: msg.created_at,
+        sources: []
+      }));
+
+      setMessages(history);
+
+    } catch(error) {
+
+      console.error(error);
+
+    }
+  };
+
   const sendQuestion = async () => {
     if (!question.trim()) return;
 
     const userMessage = {
       role:"user",
-      content: question
+      content: question,
+      timestamp: new Date()
     };
     setMessages (prev => [
       ...prev,
@@ -69,9 +108,11 @@ function Workspace() {
     try {
       const response = await api.post("/ai/agent/", {question:question, workspace_id:id});
       const aiMessage = {
-        role:"assistant",
-        content: response.data.answer
-      };
+        role: "assistant",
+        content: response.data.answer,
+        sources: response.data.sources || [],
+        timestamp: new Date()
+    };
       setMessages(prev => [
         ...prev,
         aiMessage
@@ -101,22 +142,86 @@ function Workspace() {
       </div>
       {/* Right side chat area */}
       <div className='flex-1 flex flex-col'>
-        <div className='flex-1 p-6 overflow-y-auto'>
-          <h1 className='text-3xl font-bold mb-4'>AI Research Assistant</h1>
+        <div className='flex-1 p-6 overflow-y-auto space-y-6'>
+          {messages.length === 0 && (
+            <div className="text-center mt-20">
+              <h2 className="text-2xl font-bold mb-2">
+                AI Research Assistant
+              </h2>
+              <p className="text-gray-400">
+                Upload research papers and ask questions.
+              </p>
+            </div>
+          )}
           {messages.map((message, index) => (
-            <div 
+            <div
               key={index}
-              className={message.role === "user"? "text-right mb-4" : "text-left mb-4"}>
-                <div className={message.role === "user" ? "inline-block bg-blue-600 p-3 rounded"
-                                                        : "inline-block bg-zinc-600 p-3 rounded"}>
-                  {message.content}                                        
+              className={`flex ${
+                message.role === "user"
+                  ? "justify-end"
+                  : "justify-start"
+              }`}
+            >
+              <div
+                className={`max-w-3xl rounded-xl p-4 ${
+                  message.role === "user"
+                    ? "bg-blue-600"
+                    : "bg-zinc-800"
+                }`}
+              >
+
+                <div className="font-semibold mb-1">
+                  {message.role === "user"
+                    ? "👤 You"
+                    : "🤖 Research Agent"}
+                </div>
+                <div>
+                  <div>
+                    {message.content}
+                  </div>
+                  {message.sources &&
+                  message.sources.length > 0 && (
+                    <div className="mt-3 border-t border-zinc-700 pt-3">
+                      <div className="font-semibold text-sm mb-2">
+                        Sources
+                      </div>
+                      {message.sources.map((source, index) => (
+                        <div
+                          key={index}
+                          className="
+                            bg-zinc-900
+                            p-2
+                            rounded
+                            mb-1
+                            text-sm
+                          "
+                        >
+                          📄 {source.document}
+                        </div>
+                      ))}
+
+                    </div>
+                  )}
+                  <div className="text-xs text-gray-400 mt-2">
+                    {new Date(
+                        message.timestamp
+                    ).toLocaleTimeString()}
+                  </div>
+
                 </div>
               </div>
+            </div>
           ))}
+          <div ref={messagesEndRef}></div>
           {loading && (
-            <div className='text-grey-300'>Thinking...</div>
+            <div className="flex justify-start p-4">
+              <div className="bg-zinc-800 rounded-xl p-4">
+                🤖 Thinking...
+              </div>
+            </div>
           )}
         </div>
+
         <div className='border-t border-zinc-600 p-4'>
           <div className='flex gap-2'>
             <input 
@@ -126,14 +231,19 @@ function Workspace() {
               placeholder='Ask me question...'
               className='flex-1 p-4 rounded text-white mb-4 bg-zinc-700'
             />
-            <button 
-              onClick={sendQuestion} 
-              className='bg-green-600 px-6 w-20 h-13.5 rounded text-xl'
-              onKeyDown={(e)=>{if(e.key === "Enter") {
-                sendQuestion();
-              }}}
+            <button
+              onClick={sendQuestion}
+              disabled={loading}
+              className="
+                bg-green-600
+                px-5
+                rounded
+                disabled:bg-zinc-700
+                w-24
+                h-14
+              "
             >
-              Ask
+              {loading ? "..." : "Send"}
             </button>
           </div>
         </div>
