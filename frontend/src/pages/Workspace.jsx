@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import api from '../api/axios';
+import ReactMarkdown from "react-markdown";
 
 
 function Workspace() {
@@ -11,10 +12,13 @@ function Workspace() {
   const [question, setQuestion] = useState("")
   const [messages, setMessages] = useState([])
   const [loading, setLoading] = useState(false)
+  const [conversations, setConversations] = useState([]);
+  const [selectedConversation, setSelectedConversation] = useState(null);
 
 
   useEffect(() => {
-    fetchDocuments()
+    fetchDocuments();
+    fetchConversations();
   },[id])
 
   useEffect(() => {
@@ -39,7 +43,32 @@ function Workspace() {
       console.error(error)
     }
   }
+
+  const fetchConversations = async () => {
+    try {
+      const response = await api.get(
+        `/ai/conversations/${id}/`
+      );
+      setConversations(response.data);
+    } catch(error) {
+      console.error(error);
+    }
+  };
   
+  const createConversation = async () => {
+    try {
+      const response = await api.post(
+        "/ai/conversations/create/",
+        {
+          workspace_id: id
+        }
+      );
+      fetchConversations();
+    } catch(error) {
+      console.error(error);
+    }
+  };
+
   const handleUpload = async (e) => {
     console.log("upload started")
     const file = e.target.files[0];
@@ -139,6 +168,40 @@ function Workspace() {
             <div key={doc.id} className='bg-zinc-600 p-2 rounded'>{doc.title}</div>
           ))}
         </div>
+        <div className="mt-8">
+          <div className="flex justify-between items-center">
+            <h3 className="font-bold">
+              Chats
+            </h3>
+            <button
+              onClick={createConversation}
+              className="text-sm bg-green-600 px-2 py-1 rounded"
+            >
+              + New Chat
+            </button>
+          </div>
+
+          <div className="mt-3 space-y-2">
+            {conversations.map((conversation) => (
+              <div
+                key={conversation.id}
+                onClick={() =>
+                  setSelectedConversation(
+                    conversation.id
+                  )
+                }
+                className="
+                  p-2
+                  bg-zinc-800
+                  rounded
+                  cursor-pointer
+                "
+              >
+                💬 {conversation.title}
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
       {/* Right side chat area */}
       <div className='flex-1 flex flex-col'>
@@ -176,8 +239,11 @@ function Workspace() {
                     : "🤖 Research Agent"}
                 </div>
                 <div>
-                  <div>
-                    {message.content}
+                  <div className='pros pros-invert max-w-none'>
+                    <ReactMarkdown>
+                      {message.content}
+                    </ReactMarkdown>
+                    
                   </div>
                   {message.sources &&
                   message.sources.length > 0 && (
