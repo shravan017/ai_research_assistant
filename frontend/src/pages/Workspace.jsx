@@ -28,8 +28,10 @@ function Workspace() {
   }, [messages]);
 
   useEffect(() => {
-    loadHistory();
-  }, [id]);
+    if(selectedConversation){
+      loadHistory()
+    }
+  }, [selectedConversation]);
 
 
 
@@ -62,6 +64,9 @@ function Workspace() {
         {
           workspace_id: id
         }
+      );
+      setSelectedConversation(
+        response.data.id
       );
       fetchConversations();
     } catch(error) {
@@ -102,7 +107,7 @@ function Workspace() {
     try {
 
       const response = await api.get(
-        `/ai/history/${id}/`
+        `/ai/history/${selectedConversation}/`
       );
 
       const history = response.data.map(msg => ({
@@ -135,7 +140,9 @@ function Workspace() {
     ]);
     setLoading(true)
     try {
-      const response = await api.post("/ai/agent/", {question:question, workspace_id:id});
+      console.log("selectedConversation:", selectedConversation);
+      const response = await api.post("/ai/agent/", {question:question, conversation_id:selectedConversation});
+      fetchConversations();
       const aiMessage = {
         role: "assistant",
         content: response.data.answer,
