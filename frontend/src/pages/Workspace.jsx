@@ -159,6 +159,18 @@ function Workspace() {
     setQuestion("");
   }
 
+
+  const deleteConversation = async (conversationId) => {
+    try {
+      await api.delete(
+        `/ai/conversations/${conversationId}/delete/`
+      );
+      fetchConversations();
+    } catch(error){
+      console.error(error)
+    }
+  }
+
   return (
     <div className='h-screen bg-black text-white flex'>
       {/* left sidebar */}
@@ -190,22 +202,21 @@ function Workspace() {
 
           <div className="mt-3 space-y-2">
             {conversations.map((conversation) => (
-              <div
-                key={conversation.id}
-                onClick={() =>
-                  setSelectedConversation(
-                    conversation.id
-                  )
-                }
-                className="
-                  p-2
-                  bg-zinc-800
-                  rounded
-                  cursor-pointer
-                "
-              >
-                💬 {conversation.title}
+              <div key={conversation.id} className='flex justify-between items-center'>
+                <div onClick={() => setSelectedConversation(conversation.id)}
+                  className="p-2 cursor-pointer "
+                >
+                  💬 {conversation.title}
+                </div>
+                <button 
+                 onClick={(e) => {
+                  e.stopPropagation();
+                  deleteConversation(conversation.id)
+                 }}
+                 className='cursor-pointer'
+                 > ❌ </button>
               </div>
+              
             ))}
           </div>
         </div>
