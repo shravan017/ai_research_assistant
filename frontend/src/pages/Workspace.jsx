@@ -3,6 +3,11 @@ import { useParams, useNavigate } from "react-router-dom";
 import api from "../api/axios";
 import ReactMarkdown from "react-markdown";
 import { formatDistanceToNow } from "date-fns";
+import ConversationItem from "../components/conversation/ConversationItem";
+import DocumentItem from "../components/document/DocumentItem";
+import ChatMessage from "../components/chat/ChatMessage";
+import ChatInput from "../components/chat/ChatInput";
+import Sidebar from "../components/workspace/Sidebar";
 
 function Workspace() {
   const messagesEndRef = useRef(null);
@@ -170,140 +175,23 @@ function Workspace() {
   return (
     <div className="h-screen w-screen bg-zinc-950 text-white flex overflow-hidden fixed inset-0">
       {/* ── Sidebar ── */}
-      <aside
-        className={`${
-          sidebarOpen ? "w-72" : "w-0"
-        } transition-all duration-300 overflow-hidden shrink-0 border-r border-zinc-800 flex flex-col bg-zinc-950`}
-      >
-        <div className="flex flex-col h-full p-4 min-w-[18rem]">
-          {/* Back + brand */}
-          <div className="flex items-center gap-2 mb-5">
-            <button
-              onClick={() => navigate("/dashboard")}
-              className="text-zinc-400 hover:text-white transition-colors p-1 rounded hover:bg-zinc-800"
-              title="Back to Dashboard"
-            >
-              ←
-            </button>
-            <span className="text-green-400">⬡</span>
-            <span className="font-bold text-sm tracking-tight">ResearchAI</span>
-          </div>
-
-          {/* Documents section */}
-          <div className="mb-5">
-            <div className="flex justify-between items-center mb-3">
-              <span className="text-xs font-semibold text-zinc-400 uppercase tracking-widest">
-                Documents ({documents.length})
-              </span>
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                className="text-xs bg-zinc-800 hover:bg-zinc-700 px-2 py-1 rounded text-zinc-300 transition-colors"
-                disabled={uploading}
-              >
-                {uploading ? "Uploading…" : "+ Upload"}
-              </button>
-            </div>
-            <input
-              ref={fileInputRef}
-              type="file"
-              onChange={handleUpload}
-              className="hidden"
-              accept=".pdf"
-            />
-            <div className="space-y-1.5 max-h-36 overflow-y-auto pr-1">
-              {documents.length === 0 ? (
-                <p className="text-zinc-600 text-xs py-2">No documents yet.</p>
-              ) : (
-                documents.map((doc) => (
-                  <div
-                    key={doc.id}
-                    className="flex items-center gap-2 bg-zinc-900 border border-zinc-800 p-2 rounded-lg text-xs text-zinc-300"
-                  >
-                    <span className="text-base shrink-0">📄</span>
-                    <span className="truncate">{doc.title}</span>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-
-          <div className="border-t border-zinc-800 mb-4" />
-
-          {/* Conversations section */}
-          <div className="flex justify-between items-center mb-3">
-            <span className="text-xs font-semibold text-zinc-400 uppercase tracking-widest">
-              Chats ({conversations.length})
-            </span>
-            <button
-              onClick={createConversation}
-              className="text-xs bg-green-700 hover:bg-green-600 px-2 py-1 rounded text-white transition-colors"
-            >
-              + New
-            </button>
-          </div>
-
-          <input
-            type="text"
-            placeholder="Search chats…"
-            value={conversationSearch}
-            onChange={(e) => setConversationSearch(e.target.value)}
-            className="w-full bg-zinc-900 border border-zinc-800 focus:border-zinc-600 focus:outline-none rounded-lg px-3 py-2 text-xs text-white placeholder-zinc-600 mb-3 transition-colors"
-          />
-
-          <div className="flex-1 overflow-y-auto space-y-1.5 pr-1">
-            {filteredConversations.length === 0 && (
-              <p className="text-zinc-600 text-xs py-2">No chats found.</p>
-            )}
-            {filteredConversations.map((conv) => (
-              <div
-                key={conv.id}
-                onClick={() => setSelectedConversation(conv.id)}
-                className={`group flex items-start gap-1 p-2.5 rounded-xl cursor-pointer transition-colors ${
-                  selectedConversation === conv.id
-                    ? "bg-green-700/30 border border-green-700/50"
-                    : "bg-zinc-900 border border-transparent hover:border-zinc-700"
-                }`}
-              >
-                <span className="text-base shrink-0">💬</span>
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-medium truncate">{conv.title}</p>
-                  <p className="text-zinc-500 text-xs truncate mt-0.5">
-                    {conv.last_message || "No messages yet"}
-                  </p>
-                  <p className="text-[10px] text-gray-500 mt-1">
-                    {formatDistanceToNow(new Date(conv.created_at), {
-                      addSuffix: true,
-                    })}
-                  </p>
-                </div>
-                
-                <div className="flex gap-0.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      renameConversation(conv.id);
-                    }}
-                    className="p-1 rounded hover:bg-zinc-700 text-xs"
-                    title="Rename"
-                  >
-                    ✏️
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      deleteConversation(conv.id);
-                    }}
-                    className="p-1 rounded hover:bg-red-900/40 text-xs"
-                    title="Delete"
-                  >
-                    🗑️
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </aside>
+      <Sidebar 
+        documents={documents}
+        uploading={uploading}
+        handleUpload={handleUpload}
+        fileInputRef={fileInputRef}
+        conversations={conversations}
+        filteredConversations={filteredConversations}
+        conversationSearch={conversationSearch}
+        setConversationSearch={setConversationSearch}
+        selectedConversation={selectedConversation}
+        setSelectedConversation={setSelectedConversation}
+        createConversation={createConversation}
+        renameConversation={renameConversation}
+        deleteConversation={deleteConversation}
+        Sidebar={Sidebar}
+        sidebarOpen={sidebarOpen}
+      />
 
       {/* ── Chat area ── */}
       <div className="flex-1 flex flex-col min-w-0">
@@ -353,57 +241,10 @@ function Workspace() {
           )}
 
           {messages.map((message, index) => (
-            <div
+            <ChatMessage 
               key={index}
-              className={`flex gap-3 ${
-                message.role === "user" ? "flex-row-reverse" : "flex-row"
-              }`}
-            >
-              {/* Avatar */}
-              <div
-                className={`w-8 h-8 rounded-full flex items-center justify-center text-sm shrink-0 ${
-                  message.role === "user"
-                    ? "bg-blue-700"
-                    : "bg-green-900/60 border border-green-700/40"
-                }`}
-              >
-                {message.role === "user" ? "👤" : "🤖"}
-              </div>
-
-              {/* Bubble */}
-              <div
-                className={`max-w-2xl rounded-2xl px-4 py-3 text-sm ${
-                  message.role === "user"
-                    ? "bg-blue-600 text-white"
-                    : "bg-zinc-900 border border-zinc-800 text-zinc-100"
-                }`}
-              >
-                <div className="prose prose-invert prose-sm max-w-none">
-                  <ReactMarkdown>{message.content}</ReactMarkdown>
-                </div>
-
-                {message.sources && message.sources.length > 0 && (
-                  <div className="mt-3 pt-3 border-t border-zinc-700">
-                    <p className="text-xs font-semibold text-zinc-400 mb-1.5">Sources</p>
-                    {message.sources.map((source, i) => (
-                      <div
-                        key={i}
-                        className="bg-zinc-950 border border-zinc-800 px-2.5 py-1.5 rounded-lg text-xs text-zinc-400 mb-1"
-                      >
-                        📄 {source.document}
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                <p className="text-xs text-zinc-500 mt-2">
-                  {new Date(message.timestamp).toLocaleTimeString([], {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </p>
-              </div>
-            </div>
+              message={message}
+            />
           ))}
 
           {loading && (
@@ -423,36 +264,14 @@ function Workspace() {
         </div>
 
         {/* Input bar */}
-        <div className="border-t border-zinc-800 px-4 sm:px-8 py-4 shrink-0">
-          {!selectedConversation && (
-            <p className="text-xs text-yellow-500/80 mb-2 text-center">
-              ⚠ Select or create a chat to start asking questions.
-            </p>
-          )}
-          <div className="flex gap-3 items-end">
-            <textarea
-              rows={1}
-              value={question}
-              onChange={(e) => setQuestion(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder={
-                selectedConversation
-                  ? "Ask a question… (Enter to send)"
-                  : "Create a chat first…"
-              }
-              disabled={!selectedConversation}
-              className="flex-1 resize-none bg-zinc-900 border border-zinc-700 focus:border-green-600 focus:outline-none rounded-xl px-4 py-3 text-sm text-white placeholder-zinc-500 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-              style={{ maxHeight: "140px", overflowY: "auto" }}
-            />
-            <button
-              onClick={sendQuestion}
-              disabled={loading || !selectedConversation || !question.trim()}
-              className="bg-green-600 hover:bg-green-500 disabled:bg-zinc-800 disabled:text-zinc-600 disabled:cursor-not-allowed text-white font-semibold px-5 py-3 rounded-xl transition-colors shrink-0"
-            >
-              {loading ? "…" : "Send →"}
-            </button>
-          </div>
-        </div>
+       <ChatInput 
+        question={question}
+        setQuestion={setQuestion}
+        loading={loading}
+        selectedConversation={selectedConversation}
+        sendQuestion={sendQuestion}
+        handleKeyDown={handleKeyDown}
+       />
       </div>
     </div>
   );
