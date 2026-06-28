@@ -12,6 +12,8 @@
   "dependencies": {
     "@tailwindcss/typography": "^0.5.20",
     "axios": "^1.17.0",
+    "date-fns": "^4.4.0",
+    "lucide-react": "^1.21.0",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
     "react-markdown": "^10.1.0",
