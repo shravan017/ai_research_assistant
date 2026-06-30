@@ -9,6 +9,7 @@ import ChatMessage from "../components/chat/ChatMessage";
 import ChatInput from "../components/chat/ChatInput";
 import Sidebar from "../components/workspace/Sidebar";
 import useDocument from "../hooks/useDocument";
+import useConversations from "../hooks/useConversations";
 
 function Workspace() {
   const messagesEndRef = useRef(null);
@@ -17,13 +18,11 @@ function Workspace() {
   const navigate = useNavigate();
 
   const {documents, uploading, fetchDocuments, handleUpload} = useDocument(id)
-  
+  const {conversations, selectedConversation, conversationSearch, setConversationSearch, setSelectedConversation, fetchConversations, createConversation, renameConversation, deleteConversation} = useConversations(id)
+
   const [question, setQuestion] = useState("");
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [conversations, setConversations] = useState([]);
-  const [selectedConversation, setSelectedConversation] = useState(null);
-  const [conversationSearch, setConversationSearch] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
   useEffect(() => {
@@ -39,26 +38,6 @@ function Workspace() {
     if (selectedConversation) loadHistory();
   }, [selectedConversation]);
 
-  const fetchConversations = async () => {
-    try {
-      const response = await api.get(`/ai/conversations/${id}/`);
-      setConversations(response.data);
-    } catch (error) {
-      console.error(error);
-    }
-  };
-
-  const createConversation = async () => {
-    try {
-      const response = await api.post("/ai/conversations/create/", {
-        workspace_id: id,
-      });
-      setSelectedConversation(response.data.id);
-      fetchConversations();
-    } catch (error) {
-      console.error(error);
-    }
-  };
 
   const loadHistory = async () => {
     try {
@@ -105,36 +84,6 @@ function Workspace() {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       sendQuestion();
-    }
-  };
-
-  const deleteConversation = async (conversationId) => {
-    const confirmed = window.confirm(
-      "Are you sure you want to delete this conversation ? "
-    )
-    if (!confirmed) return;
-    try {
-      await api.delete(`/ai/conversations/${conversationId}/delete/`);
-      if (selectedConversation === conversationId) {
-        setSelectedConversation(null);
-        setMessages([]);
-      }
-      fetchConversations();
-    } catch (error) {
-      console.error(error);
-    }
-  };
-
-  const renameConversation = async (conversationId) => {
-    const newTitle = prompt("Enter new conversation title:");
-    if (!newTitle || !newTitle.trim()) return;
-    try {
-      await api.patch(`/ai/conversations/${conversationId}/rename/`, {
-        title: newTitle,
-      });
-      fetchConversations();
-    } catch (error) {
-      console.error(error);
     }
   };
 
