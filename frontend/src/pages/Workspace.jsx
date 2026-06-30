@@ -8,6 +8,7 @@ import DocumentItem from "../components/document/DocumentItem";
 import ChatMessage from "../components/chat/ChatMessage";
 import ChatInput from "../components/chat/ChatInput";
 import Sidebar from "../components/workspace/Sidebar";
+import useDocument from "../hooks/useDocument";
 
 function Workspace() {
   const messagesEndRef = useRef(null);
@@ -15,11 +16,11 @@ function Workspace() {
   const { id } = useParams();
   const navigate = useNavigate();
 
-  const [documents, setDocuments] = useState([]);
+  const {documents, uploading, fetchDocuments, handleUpload} = useDocument(id)
+  
   const [question, setQuestion] = useState("");
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [uploading, setUploading] = useState(false);
   const [conversations, setConversations] = useState([]);
   const [selectedConversation, setSelectedConversation] = useState(null);
   const [conversationSearch, setConversationSearch] = useState("");
@@ -37,15 +38,6 @@ function Workspace() {
   useEffect(() => {
     if (selectedConversation) loadHistory();
   }, [selectedConversation]);
-
-  const fetchDocuments = async () => {
-    try {
-      const response = await api.get(`/documents/?workspace_id=${id}`);
-      setDocuments(response.data);
-    } catch (error) {
-      console.error(error);
-    }
-  };
 
   const fetchConversations = async () => {
     try {
@@ -65,28 +57,6 @@ function Workspace() {
       fetchConversations();
     } catch (error) {
       console.error(error);
-    }
-  };
-
-  const handleUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("title", file.name);
-    formData.append("file_type", "pdf");
-    formData.append("workspace_id", id);
-    setUploading(true);
-    try {
-      await api.post("/documents/upload/", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-      fetchDocuments();
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
 
