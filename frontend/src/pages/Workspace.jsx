@@ -10,6 +10,7 @@ import ChatInput from "../components/chat/ChatInput";
 import Sidebar from "../components/workspace/Sidebar";
 import useDocument from "../hooks/useDocument";
 import useConversations from "../hooks/useConversations";
+import useChat from "../hooks/useChat";
 
 function Workspace() {
   const messagesEndRef = useRef(null);
@@ -19,10 +20,9 @@ function Workspace() {
 
   const {documents, uploading, fetchDocuments, handleUpload} = useDocument(id)
   const {conversations, selectedConversation, conversationSearch, setConversationSearch, setSelectedConversation, fetchConversations, createConversation, renameConversation, deleteConversation} = useConversations(id)
+  const {messages, loading, sendQuestion, loadHistory} = useChat(id, selectedConversation);
 
   const [question, setQuestion] = useState("");
-  const [messages, setMessages] = useState([]);
-  const [loading, setLoading] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
   useEffect(() => {
@@ -38,47 +38,6 @@ function Workspace() {
     if (selectedConversation) loadHistory();
   }, [selectedConversation]);
 
-
-  const loadHistory = async () => {
-    try {
-      const response = await api.get(`/ai/history/${selectedConversation}/`);
-      const history = response.data.map((msg) => ({
-        role: msg.role,
-        content: msg.content,
-        timestamp: msg.created_at,
-        sources: [],
-      }));
-      setMessages(history);
-    } catch (error) {
-      console.error(error);
-    }
-  };
-
-  const sendQuestion = async () => {
-    if (!question.trim()) return;
-    const userMessage = { role: "user", content: question, timestamp: new Date() };
-    setMessages((prev) => [...prev, userMessage]);
-    setLoading(true);
-    try {
-      const response = await api.post("/ai/agent/", {
-        question,
-        conversation_id: selectedConversation,
-      });
-      fetchConversations();
-      const aiMessage = {
-        role: "assistant",
-        content: response.data.answer,
-        sources: response.data.sources || [],
-        timestamp: new Date(),
-      };
-      setMessages((prev) => [...prev, aiMessage]);
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
-    setQuestion("");
-  };
 
   const handleKeyDown = (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
